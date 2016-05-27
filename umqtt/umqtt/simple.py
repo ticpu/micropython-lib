@@ -18,11 +18,12 @@ class MQTTClient:
         self.sock.write(struct.pack("!H", len(s)))
         self.sock.write(s)
 
-    def connect(self):
+    def connect(self, clean_session=True):
         self.sock = socket.socket()
         self.sock.connect(self.addr)
         msg = bytearray(b"\x10\0\0\x04MQTT\x04\x02\0\0")
         msg[1] = 10 + 2 + len(self.client_id)
+        msg[9] = clean_session << 1
         self.sock.write(msg)
         print(hex(len(msg)), hexlify(msg, ":"))
         self.send_str(self.client_id)
