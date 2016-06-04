@@ -11,6 +11,15 @@ class MQTTClient(simple.MQTTClient):
                 print("reconnect: %r" % e)
                 time.sleep(1)
 
+    def publish(self, topic, msg, qos=0, retain=False):
+        while 1:
+            try:
+                return super().publish(topic, msg, qos, retain)
+            except OSError as e:
+                print("%r" % e)
+            time.sleep(0.5)
+            self.reconnect()
+
     def wait_msg(self):
         while 1:
             try:
