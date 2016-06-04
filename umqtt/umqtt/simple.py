@@ -59,7 +59,8 @@ class MQTTClient:
         print(resp)
         assert resp[0] == 0x90
         assert resp[2] == pkt[2] and resp[3] == pkt[3]
-        assert resp[4] == 0
+        if resp[4] == 0x80:
+            raise MQTTException(resp[4])
 
     def wait_msg(self):
         res = self.sock.read(1)
