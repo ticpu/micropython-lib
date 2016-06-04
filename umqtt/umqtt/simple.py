@@ -18,6 +18,16 @@ class MQTTClient:
         self.sock.write(struct.pack("!H", len(s)))
         self.sock.write(s)
 
+    def recv_len(self):
+        n = 0
+        sh = 0
+        while 1:
+            b = self.sock.read(1)[0]
+            n |= (b & 0x7f) << sh
+            if not b & 0x80:
+                return n
+            sh += 7
+
     def connect(self, clean_session=True):
         self.sock = socket.socket()
         self.sock.connect(self.addr)
@@ -70,7 +80,7 @@ class MQTTClient:
         if res == b"":
             raise OSError(-1)
         assert res == b"\x30"
-        sz = self.sock.read(1)[0]
+        sz = self.recv_len()
         topic_len = self.sock.read(2)
         topic_len = (topic_len[0] << 8) | topic_len[1]
         topic = self.sock.read(topic_len)
