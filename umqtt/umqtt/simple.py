@@ -49,9 +49,12 @@ class MQTTClient:
 
     def publish(self, topic, msg, qos=0, retain=False):
         assert qos == 0
-        pkt = bytearray(b"\x30\0")
+        pkt = bytearray(b"\x30\0\0")
         pkt[0] |= qos << 1 | retain
-        pkt[1] = 2 + len(topic) + len(msg)
+        sz = 2 + len(topic) + len(msg)
+        assert sz <= 16383
+        pkt[1] = (sz & 0x7f) | 0x80
+        pkt[2] = sz >> 7
         print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self.send_str(topic)
