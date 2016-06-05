@@ -13,6 +13,10 @@ class MQTTClient:
         self.sock = None
         self.addr = socket.getaddrinfo(server, port)[0][-1]
         self.pid = 0
+        self.cb = None
+
+    def set_callback(self, f):
+        self.cb = f
 
     def send_str(self, s):
         self.sock.write(struct.pack("!H", len(s)))
@@ -99,7 +103,10 @@ class MQTTClient:
         topic_len = (topic_len[0] << 8) | topic_len[1]
         topic = self.sock.read(topic_len)
         msg = self.sock.read(sz - topic_len - 2)
-        return (topic, msg)
+        if self.cb is not None:
+            self.cb(topic, msg)
+        else:
+            return (topic, msg)
 
     # Checks whether a pending message from server is available.
     # If not, returns immediately with None. If a message is
