@@ -97,14 +97,26 @@ class MQTTClient:
             sz = self.sock.read(1)[0]
             assert sz == 0
             return None
-        assert res == b"\x30"
+        op = res[0]
+        assert op & 0xf0 == 0x30
         sz = self.recv_len()
         topic_len = self.sock.read(2)
         topic_len = (topic_len[0] << 8) | topic_len[1]
         topic = self.sock.read(topic_len)
-        msg = self.sock.read(sz - topic_len - 2)
+        sz -= topic_len + 2
+        if op & 6:
+            pid = self.sock.read(2)
+            pid = pid[0] << 8 | pid[1]
+            sz -= 2
+        msg = self.sock.read(sz)
         if self.cb is not None:
             self.cb(topic, msg)
+            if op & 6 == 2:
+                pkt = bytearray(b"\x40\x02\0\0")
+                struct.pack_into("!H", pkt, 2, pid)
+                self.sock.write(pkt)
+            elif op & 6 == 4:
+                assert 0
         else:
             return (topic, msg)
 
