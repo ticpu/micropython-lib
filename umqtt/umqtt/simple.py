@@ -75,6 +75,9 @@ class MQTTClient:
         if resp[4] == 0x80:
             raise MQTTException(resp[4])
 
+    # Returns either (topic, msg) for subscribed messages,
+    # or None if internal MQTT message was received (this
+    # includes PINGRESP).
     def wait_msg(self):
         res = self.sock.read(1)
         if res is None:
@@ -82,6 +85,10 @@ class MQTTClient:
         self.sock.setblocking(True)
         if res == b"":
             raise OSError(-1)
+        if res == b"\xd0":  # PINGRESP
+            sz = self.sock.read(1)[0]
+            assert sz == 0
+            return None
         assert res == b"\x30"
         sz = self.recv_len()
         topic_len = self.sock.read(2)
@@ -90,6 +97,11 @@ class MQTTClient:
         msg = self.sock.read(sz - topic_len - 2)
         return (topic, msg)
 
+    # Checks whether a pending message from server is available.
+    # If not, returns immediately with None. If a message is
+    # available, returns either (topic, msg) for subscribed
+    # messages, or None if internal MQTT message was received
+    # (this includes PINGRESP).
     def check_msg(self):
         self.sock.setblocking(False)
         return self.wait_msg()
