@@ -56,17 +56,36 @@ class MQTTClient:
         self.sock.close()
 
     def publish(self, topic, msg, retain=False, qos=0):
-        assert qos == 0
         pkt = bytearray(b"\x30\0\0")
         pkt[0] |= qos << 1 | retain
         sz = 2 + len(topic) + len(msg)
+        if qos > 0:
+            sz += 2
         assert sz <= 16383
         pkt[1] = (sz & 0x7f) | 0x80
         pkt[2] = sz >> 7
         print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self.send_str(topic)
+        if qos > 0:
+            self.pid += 1
+            pid = self.pid
+            buf = bytearray(b"\0\0")
+            struct.pack_into("!H", buf, 0, pid)
+            self.sock.write(buf)
         self.sock.write(msg)
+        if qos == 1:
+            while 1:
+                op = self.wait_msg()
+                if op == 0x40:
+                    sz = self.sock.read(1)
+                    assert sz == b"\x02"
+                    rcv_pid = self.sock.read(2)
+                    rcv_pid = rcv_pid[0] << 8 | rcv_pid[1]
+                    if pid == rcv_pid:
+                        return
+        elif qos == 2:
+            assert 0
 
     def subscribe(self, topic, qos=0):
         pkt = bytearray(b"\x82\0\0\0")
@@ -98,7 +117,8 @@ class MQTTClient:
             assert sz == 0
             return None
         op = res[0]
-        assert op & 0xf0 == 0x30
+        if op & 0xf0 != 0x30:
+            return op
         sz = self.recv_len()
         topic_len = self.sock.read(2)
         topic_len = (topic_len[0] << 8) | topic_len[1]
