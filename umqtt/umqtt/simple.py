@@ -68,14 +68,14 @@ class MQTTClient:
         self.send_str(topic)
         self.sock.write(msg)
 
-    def subscribe(self, topic):
+    def subscribe(self, topic, qos=0):
         pkt = bytearray(b"\x82\0\0\0")
         self.pid += 1
         struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic) + 1, self.pid)
         print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self.send_str(topic)
-        self.sock.write(b"\0")
+        self.sock.write(qos.to_bytes(1))
         resp = self.sock.read(5)
         print(resp)
         assert resp[0] == 0x90
