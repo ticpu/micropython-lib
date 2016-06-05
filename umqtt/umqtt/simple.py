@@ -39,7 +39,7 @@ class MQTTClient:
         msg[1] = 10 + 2 + len(self.client_id)
         msg[9] = clean_session << 1
         self.sock.write(msg)
-        print(hex(len(msg)), hexlify(msg, ":"))
+        #print(hex(len(msg)), hexlify(msg, ":"))
         self.send_str(self.client_id)
         resp = self.sock.read(4)
         assert resp[0] == 0x20 and resp[1] == 0x02
@@ -64,7 +64,7 @@ class MQTTClient:
         assert sz <= 16383
         pkt[1] = (sz & 0x7f) | 0x80
         pkt[2] = sz >> 7
-        print(hex(len(pkt)), hexlify(pkt, ":"))
+        #print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self.send_str(topic)
         if qos > 0:
@@ -91,12 +91,12 @@ class MQTTClient:
         pkt = bytearray(b"\x82\0\0\0")
         self.pid += 1
         struct.pack_into("!BH", pkt, 1, 2 + 2 + len(topic) + 1, self.pid)
-        print(hex(len(pkt)), hexlify(pkt, ":"))
+        #print(hex(len(pkt)), hexlify(pkt, ":"))
         self.sock.write(pkt)
         self.send_str(topic)
         self.sock.write(qos.to_bytes(1))
         resp = self.sock.read(5)
-        print(resp)
+        #print(resp)
         assert resp[0] == 0x90
         assert resp[2] == pkt[2] and resp[3] == pkt[3]
         if resp[4] == 0x80:
