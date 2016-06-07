@@ -105,8 +105,8 @@ class SSLSocket(object):
 
 	def read(self, size):
 		buf = bytes(size)
-		libssl.SSL_read(self._c_ssl_socket, buf, size)
-		return buf
+		recv_size = libssl.SSL_read(self._c_ssl_socket, buf, size)
+		return buf[:recv_size]
 
 	def recv(self, size=4096):
 		return self.read(size)
