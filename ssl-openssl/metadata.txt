@@ -1,0 +1,6 @@
+name = ssl
+srctype = micropython-lib
+type = module
+version = 0.1
+author = Jérôme Poulin
+depends = ffilib
