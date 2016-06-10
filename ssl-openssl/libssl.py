@@ -1,6 +1,9 @@
-import ffilib
-
-_openssl = ffilib.open("libssl")
+try:
+	import ffi
+	_openssl = ffi.open("/usr/lib/libssl.so.1.0.0")
+except OSError:
+	import ffilib
+	_openssl = ffilib.open("libssl")
 
 # Init.
 SSL_library_init = _openssl.func("v", "SSL_library_init", "")
